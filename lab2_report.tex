@@ -2,6 +2,12 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+
+\newtcblisting{messageshell}{colback=black,colupper=white,colframe=yellow!75!black,
+listing only,listing options={language={}, basicstyle=\small\ttfamily, breaklines=true,aboveskip=0pt, belowskip=0pt},
+every listing line={}}
 
 \title{Stochastic Simulation Lab \#2 report}
 \author{Shitong CHAI}
@@ -23,5 +29,272 @@ I have found the source file and included the header file in my source code as s
 
 \item{\textbf{Generation of uniform random numbers between A and B}}
 
+Using the function "genrand\_real2" defined in "mt19937ar.h", and the formula $y=(b-a)x+a$, the function "uniform" is written as follows.
+
+\begin{lstlisting}[language=C]
+double uniform(double a, double b)
+{
+/*
+* :argument 
+*       a,b are the endpoints of an interval [a,b]. 
+* :return  
+*       A random number in the interval [a,b].
+* :usage
+*       To generate a uniformly distributed random number.
+*/
+
+  return (b - a) * genrand_real2() + a;
+}
+\end{lstlisting}
+The numbers generated:
+\begin{messageshell}
+1000 outputs of uniform(2, 4)
+2.49713780 2.44514696 2.22225526 3.91257279 3.96927063
+3.55732628 3.56256356 2.10599778 2.37727890 3.20666351
+3.19221428 3.51001672 2.30116489 2.68895420 3.97695208
+2.53242437 3.79916178 3.49990524 2.82590178 2.53024722
+2.66212271 2.59135096 3.33176057 2.82164228 3.80438722
+3.84649598 2.03378356 3.11013135 3.21082118 3.50757487
+3.30054610 2.33775862 2.28211709 2.12631479 2.33301166
+3.53575071 2.61605384 3.96955125 2.64963992 3.73956981
+2.97869328 3.73705059 3.37390305 2.77389266 3.34835932
+3.10385543 2.46756682 3.04638593 2.98312384 3.50750636
+3.90102717 2.10234538 3.14275137 3.72740918 2.38910947
+3.12315169 3.27367910 2.35223606 3.01291095 2.87258683
+3.28640525 3.93799280 3.56047723 2.08434517 3.52266207
+2.36136704 3.03291216 3.39779681 2.86930854 2.99354783
+2.01623423 2.55503779 3.44462630 3.35810942 2.47143677
+3.01739136 3.98250611 3.35018357 3.77793906 3.41130608
+2.59705303 2.19557944 3.08332442 3.27658980 2.59512475
+3.74351950 2.12655604 3.22298022 3.19235552 3.42305051
+3.97138990 2.57201724 3.67432210 2.50194329 3.11569273
+2.86237084 3.40335574 2.93130950 3.40019178 2.48884262
+
+\end{messageshell}
+\item{\textbf{Reproduction of discrete empirical distributions}}
+\begin{enumerate}[label=(\alph*)]
+\item{Implement a function to reproduce the histogram given below and cumulate.}
+
+The function to reproduce the histogram $P\{X=A\}=0.5,P\{X=B\}=0.1,P\{X=C\}=0.4$ is given below.
+
+\begin{lstlisting}[language=C]
+int species_distribution(void)
+{
+/*
+* :return  
+*       A random number which corresponds to a species.
+* :usage
+*       To generate a species randomly with a given C.D.F.
+*/
+  double    Array[3] = {0.5, 0.6, 1};
+  double    rand_num = genrand_real2();
+  for(int i=0; i<3; i++)
+    {
+        if(rand_num < Array[i])
+        {
+            return i;
+        }
+    }
+  return -1;
+}
+\end{lstlisting}
+
+The distribution collected with the function defined above is as follows.
+
+\begin{messageshell}
+
+ Probabilistic distribution percentage:
+ 49.10%  8.30%  42.60%
+
+ Accumulative distribution(repartition) percentage:
+ 49.10%  57.40%  100.00%
+
+ 1000 000 drawings:
+
+ Probabilistic distribution percentage:
+ 49.98%  10.05%  39.97%
+
+ Accumulative distribution(repartition) percentage:
+ 49.98%  60.03%  100.00%
+\end{messageshell}
+
+\item{Implement another function, test this function with your own data and check a simulated distribution.}
+
+The other function is defined below.
+
+\begin{lstlisting}[language=C]
+typedef int (*fun_ptr)();
+void test_reproduction(int drawings, int size, fun_ptr distribution)
+{
+/*
+* :argument 
+*       drawings is the number of samples, size is the size of the
+*       given discrete repartition function array, distribution is
+*       the distribution from which random classes are generated. 
+* :usage
+*       To collect the statistical distribution of the generated
+*       random classes and print them to the screen.
+*/
+    int *Array = malloc(size * sizeof(int));
+    for(int i=0; i < size; i++)
+    {
+        Array[i] = 0;
+    }
+    for(int i=0; i < drawings; i++)
+    {
+        int rand_species = distribution();
+        for(int j=0; j < size; j++)
+            if(rand_species == j)
+                Array[j]++;
+    }
+    printf("\n Probabilistic distribution percentage:\n");
+    for(int i=0; i < size; i++)
+    {
+        printf(" %.2lf%% ", 100 * Array[i]/(double)drawings);
+    }
+
+    printf("\n");
+    printf("\n Accumulative distribution(repartition) percentage:\n");
+    for(int i=1; i < size; i++)
+    {
+        Array[i] += Array[i - 1];
+    }
+    for(int i=0; i < size; i++)
+    {
+        printf(" %.2lf%% ", 100 * Array[i]/(double)drawings);
+    }
+    printf("\n");
+}
+\end{lstlisting}
+
+I use this simulated distribution to generate my own data:
+
+\begin{lstlisting}[language=C]
+int another_distribution(void)
+{
+/*
+* :return  
+*       A random number which corresponds to a class.
+* :usage
+*       To generate a class randomly with a given repartition 
+*       function which is a simulated distribution.
+*/
+    double      Array[5] = {0.2, 0.3, 0.5, 0.8, 1};
+    double      rand_num = genrand_real2();
+    for(int i=0; i<5; i++)
+    {
+        if(rand_num < Array[i])
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+\end{lstlisting}
+My own data generated using this distribution is checked with function "test\_reproduction", result is given below.
+\begin{messageshell}
+ 1000 drawings:
+
+ Probabilistic distribution percentage:
+ 19.20%  9.10%  19.90%  31.00%  20.80%
+
+ Accumulative distribution(repartition) percentage:
+ 19.20%  28.30%  48.20%  79.20%  100.00%
+
+ 1000 000 drawings:
+
+ Probabilistic distribution percentage:
+ 20.10%  10.00%  19.97%  29.92%  20.01%
+
+ Accumulative distribution(repartition) percentage:
+ 20.10%  30.11%  50.07%  79.99%  100.00%
+
+\end{messageshell}
+\end{enumerate}
+\item{\textbf{Reproduction of continuous distributions.}}
+
+With the formula $y=-M\ln(1-x)$, we can generate numbers according to a exponential distribution. This function is written as follows.
+
+\begin{lstlisting}[language=C]
+double negative_exponential(double M_coeff)
+{
+/*
+* :argument 
+*       M_coeff is the coefficient M in the formula of negative 
+*       exponential distribution function. 
+* :return  
+*       A random number following the PDF: f(x)=exp(-x/M)/M.
+* :usage
+*       To generate a negative exponentially distributed 
+*       random number.
+*/
+    double      rand_num = genrand_real2();
+    return -M_coeff*log(1-rand_num);
+}
+\end{lstlisting}
+
+The cumulated result is as follows.
+\begin{messageshell}
+
+1000 drawings(P.D.F.):
+10.10% 8.30% 7.00% 6.70% 5.30% 6.90% 5.80% 5.90% 3.50% 4.20% 3.10% 3.70% 2.40% 2.20% 2.00% 1.90% 2.00% 1.00% 2.00% 1.00%
+
+1000000 drawings(P.D.F.):
+9.51% 8.62% 7.82% 7.05% 6.33% 5.76% 5.23% 4.71% 4.28% 3.88% 3.50% 3.15% 2.87% 2.59% 2.33% 2.14% 1.90% 1.74% 1.57% 1.44% 
+\end{messageshell}
+\item{\textbf{Simulating non reversible distribution laws.}}
+With the Box and Muller function: $x_1=\cos(2\pi Rn_2)\sqrt{-2\ln(Rn_1)}$, we can generate numbers following distribution $N(0,1)$. The function to do this is as follows.
+\begin{lstlisting}[language=C]
+double norm_box_muller(void)
+{
+/*
+* :return  
+*       A random number following standard normal distribution.
+* :usage
+*       To generate a random number following the distribution N(0,1).
+*/
+    double rn1 = genrand_real2();
+    double rn2 = genrand_real2();
+    return cos(2 * M_PI * rn2) * sqrt(-2*log(rn1));
+}  
+\end{lstlisting}
+
+The collected data ($N(0,1)$ and $N(10,3^2)$) which is shown below fits the known statistics for the Gaussian distribution.
+
+\begin{messageshell}
+
+1000 drawings:
+0.02 0.15 0.31 0.34 0.15 0.02
+
+1000000 drawings:
+0.02 0.14 0.34 0.34 0.14 0.02
+
+Gaussian distribution with an average of 10 and with a standard deviation at 3
+1000 drawings:
+0.00 0.00 0.00 0.00 0.00 0.01
+\end{messageshell}
+\item{\textbf{Find libraries in C/C++ and Java that generate random variates like you did in the previous questions.}}
+GNU Scientific Library has many RNGs covering almost all of the RNGs in the previous questions.
+
+"mt19937ar.h" can be replaced by including "gsl\_rng.h", the mt19937 RNG algorithm is declared as follows.
+\begin{lstlisting}[language=C]
+GSL_VAR const gsl_rng_type *gsl_rng_mt19937;
+\end{lstlisting}
+
+Uniform distribution can be obtained by this function:
+\begin{lstlisting}[language=C]
+double gsl_ran_flat(const gsl_rng * r, double a, double b);
+\end{lstlisting}
+
+These functions can be used to generated a random number following a discrete random distribution:
+\begin{lstlisting}[language=C]
+gsl_ran_discrete_t * gsl_ran_discrete_preproc(size_t K, const double * P);
+size_t gsl_ran_discrete(const gsl_rng * r, const gsl_ran_discrete_t * g);
+\end{lstlisting}
+
+The gaussian distributed random number can be generated using this function:
+\begin{lstlisting}[language=C]
+double gsl_ran_gaussian(const gsl_rng * r, double sigma);
+\end{lstlisting}
 \end{enumerate}
 \end{document}
