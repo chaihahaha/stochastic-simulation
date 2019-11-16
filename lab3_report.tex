@@ -1,0 +1,189 @@
+\documentclass{article}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+
+\lstset{
+  breaklines=true
+}
+
+\newtcblisting{messageshell}{colback=black,colupper=white,colframe=yellow!75!black,
+listing only,listing options={language={}, basicstyle=\small\ttfamily, breaklines=true,aboveskip=0pt, belowskip=0pt},
+every listing line={}}
+
+\title{Stochastic Simulation Lab \#3 report}
+\author{Shitong CHAI}
+\date{}
+
+\begin{document}
+\maketitle 
+
+\begin{enumerate}
+\item{\textbf{Compute $\pi$ with the Monte Carlo method }}
+
+The function "compute\_pi" defined below used the formula $\pi = 4 \frac{S_\text{quarter circle}}{S_\text{square}} = 4 \frac{N_\text{points inside}}{N_\text{total}}$ to compute $\pi$:
+\begin{lstlisting}[language=C]
+double compute_pi(unsigned long long points)
+{
+    
+    /*
+     * :argument
+     *     points: the number of points
+     *             generated to get Pi.
+     * :return
+     *  The value of Pi computed with Monte Carlo 
+     *     method.
+     * :usage
+     *     Call the function with drawings, the bigger
+     *     drawings is, the more precise the answer 
+     *     will be.
+     */
+    double x, y;
+    unsigned long long    counter=0;
+    for(unsigned long long i=0; i < points; i++)
+    {
+        x = genrand_real2();
+        y = genrand_real2();
+        if((x * x + y * y) < 1)
+            counter++;
+    }
+    return 4 * (double)counter/(double)points;
+
+}
+\end{lstlisting}
+The experiment result is as follows:
+\begin{messageshell}
+1) Compute Pi with the Monte Carlo method:
+1000 points:
+Pi ~ 3.172000
+1000 000 points:
+Pi ~ 3.139400
+1000 000 000 points:
+Pi ~ 3.141541
+\end{messageshell}
+The converging process from 100 000 drawings to 60 000 100 000 drawings is as follows:
+\begin{messageshell}
+drawings: 100000, pi ~ 3.140760
+drawings: 10000100000, pi ~ 3.141608
+drawings: 20000100000, pi ~ 3.141617
+drawings: 30000100000, pi ~ 3.141613
+drawings: 40000100000, pi ~ 3.141609
+drawings: 50000100000, pi ~ 3.141604
+drawings: 60000100000, pi ~ 3.141599
+\end{messageshell}
+So to get a precision at $10^{-2}$, I will need at least 100 000 drawings. To get a precision at $10^{-4}$, I will need at least 60 000 100 000 drawings. This corresponds to the square root converging speed.
+\item{\textbf{Propose a loop on this function to compute n independent experiments }}
+
+The function defined below is used to get n independent experiment results:
+\begin{lstlisting}[language=C]
+double *independent_experiments(unsigned long long n, unsigned long long points)
+{
+    /*
+     * :argument 
+     *     n: the number of independent experiments
+     *     points: the number of points generated.
+     * :return
+     *     array storing n experiment results
+     * :usage
+     *     Run MC simulation n times with fixed
+     *     points generated.
+     */
+    double *results = malloc(n * sizeof(double));
+    printf("Running %llu independent experiments\n", n);
+    for(unsigned long long i=0; i < n; i++)
+    {
+	results[i] = compute_pi(points);
+    }
+    return results;
+}
+\end{lstlisting}
+The experiment results is as follows:
+\begin{messageshell}
+2) n independent experiments
+Running 10 independent experiments
+Experiment 0: 3.139964
+Experiment 1: 3.143592
+Experiment 2: 3.140024
+Experiment 3: 3.139328
+Experiment 4: 3.138552
+Experiment 5: 3.142028
+Experiment 6: 3.143480
+Experiment 7: 3.139464
+Experiment 8: 3.141672
+Experiment 9: 3.140424
+Final result(average): 3.140853
+\end{messageshell}
+\item{\textbf{Computing of confidence intervals around the mean}}
+
+The function "sigma2" is used to compute estimated variance, the function "tn\_1\_distribution" is used to simulate the distribution $t_{n-1,1-\frac{\alpha}{2}}$, and the function "confidence\_radius" is used to compute the confidence radius. Code is as follows:
+\begin{lstlisting}[language=C]
+double sigma2(double *a, double mean, unsigned long long n)
+{
+    /*
+     * :argument
+     *     n: the number of independent experiments 
+     *     mean: the average value of array a
+     *     a: array storing n experiment results 
+     * :return 
+     *     estimate without bias of sigma^2 variance
+     * :usage
+     *     compute the estimated variance of array a 
+     */
+     double summary=0;
+     for(unsigned long long i=0; i < n; i++)
+     {
+         summary += (a[i]-mean) * (a[i]-mean);
+     }
+     return summary/(n-1);
+}
+double tn_1_distribution(unsigned long long n)
+{
+    if(n<=0)
+        return -1;
+    double t_n[35]={-1, 12.706, 4.303, 3.182, 2.776, 
+    2.571, 2.447, 2.365, 2.308, 2.262, 2.228, 2.201, 
+    2.179, 2.160, 2.145, 2.131, 2.120, 2.110, 2.101, 
+    2.093, 2.086, 2.080, 2.074, 2.069, 2.064, 2.060, 
+    2.056, 2.052, 2.048, 2.045, 2.042, 2.021, 2.000, 
+    1.980, 1.960}; 
+    if(n<=30)
+        return t_n[n];
+    else if(n<=40)
+        return t_n[31];
+    else if(n<=80)
+        return t_n[32];
+    else if(n<=120)
+        return t_n[33];
+    else
+        return t_n[34];
+}
+double confidence_radius(double *a, double mean, unsigned long long n)
+{
+    /*
+     * :argument
+     *     n: the number of independent experiments 
+     *     mean: the average value of array a
+     *     a: array storing n experiment results 
+     * :return 
+     *     confidence radius
+     * :usage
+     *     compute the confidence radius of n 
+     *     independent experiments 
+     */
+    
+    return tn_1_distribution(n)*sqrt(sigma2(a, mean, n)/n);
+}
+\end{lstlisting}
+And the experiment result is as follows:
+\begin{messageshell}
+3) Computing of confidence intervals around the mean
+Running 10 independent experiments
+Mean value: 3.142052
+Confidence interval: [3.140781, 3.143322]
+Confidence level: 95%
+\end{messageshell}
+\end{enumerate}
+\end{document}
