@@ -35,12 +35,16 @@ class Rabbit
 {
     public:
         static int counter;
+        static int mature_male_counter;
         int age;
         int id;
         int mature_age;
         bool is_female;
         bool is_dead;
-        Rabbit():age(0), is_female(false), is_dead(false){id=counter++;}
+        Rabbit():age(0), is_female(false), is_dead(false)
+        {
+            id=counter++;
+        }
 
         bool is_mature(void)
         {
@@ -79,6 +83,7 @@ class Rabbit
         
 };
 int Rabbit::counter = 0;
+int Rabbit::mature_male_counter = 0;
 
 class MaleRabbit: public Rabbit
 {
@@ -90,13 +95,25 @@ class MaleRabbit: public Rabbit
         }
         bool one_day_life(list<Rabbit*> &population)
         {
+            die();
             if(!is_dead)
+            {
+                bool not_mature=!is_mature();
                 age++;
-            return die();
+                bool mature = is_mature();
+                if(not_mature && mature)
+                    mature_male_counter++;
+            }
+            else 
+            {
+                if(is_mature())
+                    mature_male_counter--;
+            }
+            return is_dead;
         }
         void print() 
         {
-            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\t"<<(is_dead?"Dead":"Alive")<<",\tMature age: "<<mature_age<<endl;
+            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\t"<<(is_dead?"Dead":"Alive")<<",\t"<<(is_mature()?"Is Mature":"Not Mature")<<",\tMature Male number: "<<mature_male_counter<<endl;
         }
 };
 class FemaleRabbit: public Rabbit
@@ -106,6 +123,8 @@ class FemaleRabbit: public Rabbit
         {
             is_female=true;
             mature_age = (genrand_int31()%3 + 5)*MONTH;
+            pregnant_cycle = genrand_int31()%10 + 27;
+            lactational_amenorrhea = genrand_int31()%3;
         }
         bool one_day_life(list<Rabbit*> &population)
         {
@@ -115,8 +134,8 @@ class FemaleRabbit: public Rabbit
             {
                 
                 age++;
-                
-                days_after_parturition++;
+                if(!is_pregnant() && is_mature())
+                    days_after_parturition++;
                 if(is_pregnant())
                     days_after_pregnant++;
                 get_pregnant();
@@ -127,12 +146,14 @@ class FemaleRabbit: public Rabbit
         }
         void print() 
         {
-            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\t"<<(is_dead?"Dead":"Alive")<<",\tMature age: "<<mature_age<<", days after parturition:"<<days_after_parturition<<",\tdays after pregnant:"<<days_after_pregnant<<",\t"<<(is_pregnant()?"Pregnant":"Not Pregnant")<<endl;
+            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\t"<<(is_dead?"Dead":"Alive")<<",\t"<<(is_mature()?"Is Mature":"Not Mature")<<", days after parturition:"<<days_after_parturition<<",\tdays after pregnant:"<<days_after_pregnant<<",\t"<<(is_pregnant()?"Pregnant":"Not Pregnant")<<endl;
         }
     private:
         int days_after_parturition=0;
         int days_after_pregnant=0;
         bool _is_pregnant=false;
+        int pregnant_cycle; //least time of pregnancy needed before giving birth
+        int lactational_amenorrhea; //least time of Lactational Amenorrhea
         bool female_birth(double gender_ratio_female)
         {
             //give birth to a female rabbit, influenced by gender ratio
@@ -154,7 +175,7 @@ class FemaleRabbit: public Rabbit
         bool can_give_birth()
         {
             //not in Lactational Amenorrhea, not Immature, fertile
-            if((is_pregnant()) && is_mature() && days_after_pregnant >= 27)
+            if((is_pregnant()) && is_mature() && days_after_pregnant >= pregnant_cycle)
                 return true; 
             else
                 return false;
@@ -162,7 +183,7 @@ class FemaleRabbit: public Rabbit
         bool can_get_pregnant()
         {
             //not in Lactational Amenorrhea, not Immature, fertile
-            if((!is_pregnant()) && is_mature() && days_after_parturition >= 3)
+            if((!is_pregnant()) && is_mature() && days_after_parturition >= lactational_amenorrhea && mature_male_counter>0)
                 return true; 
             else
                 return false;
@@ -179,7 +200,7 @@ class FemaleRabbit: public Rabbit
         {
             if(can_give_birth())
             {
-                cout<<"giving birth"<<endl;
+                //cout<<"giving birth"<<endl;
                 //can give birth if not in amenorrhea
                 int number_of_birth = fertility();
                 for(int i=0; i<number_of_birth; i++)
