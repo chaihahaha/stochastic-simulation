@@ -34,11 +34,13 @@ double uniform(double a, double b)
 class Rabbit
 {
     public:
+        static int counter;
         int age;
         int id;
-        bool is_female;
         int mature_age;
-        Rabbit():age(0), is_female(false){}
+        bool is_female;
+        bool is_dead;
+        Rabbit():age(0), is_female(false), is_dead(false){id=counter++;}
 
         bool is_mature(void)
         {
@@ -47,12 +49,21 @@ class Rabbit
             else
                 return true;
         }
-        bool one_day_life(list<Rabbit> population)
+        virtual bool one_day_life(list<Rabbit*> &population){}
+        
+        bool die()
         {
-            age++;
-            return die();
+            if(genrand_real2()<survival_rate())
+                return false;
+            else
+            {
+                is_dead=true;
+                return true;
+            }
         }
-        double survival_rate()
+        virtual void print() {}
+    private:
+        double survival_rate_per_year()
         {
             if(!is_mature())
                 return 0.2;
@@ -61,61 +72,66 @@ class Rabbit
             else
                 return max(0.5 - (age/YEAR - 10)*0.1, 0.0);
         }
-        bool die()
+        double survival_rate()
         {
-            if(genrand_real2()<survival_rate())
-                return false;
-            else
-                return true;
+            return pow(survival_rate_per_year(), 1.0/365);
         }
-        virtual void print() {}
         
 };
+int Rabbit::counter = 0;
+
 class MaleRabbit: public Rabbit
 {
     public:
-        MaleRabbit(int identity)
+        MaleRabbit()
         {
             is_female=false;
-            id=identity;
             mature_age = (genrand_int31()%3 + 5)*MONTH;
+        }
+        bool one_day_life(list<Rabbit*> &population)
+        {
+            if(!is_dead)
+                age++;
+            return die();
         }
         void print() 
         {
-            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\tMature age: "<<mature_age<<endl;
+            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\t"<<(is_dead?"Dead":"Alive")<<",\tMature age: "<<mature_age<<endl;
         }
 };
 class FemaleRabbit: public Rabbit
 {
     public:
-        FemaleRabbit(int identity)
+        FemaleRabbit()
         {
             is_female=true;
-            id=identity;
             mature_age = (genrand_int31()%3 + 5)*MONTH;
         }
-        bool one_day_life(list<Rabbit> &population)
+        bool one_day_life(list<Rabbit*> &population)
         {
             // return true if dead
-            age++;
             
-            if(can_give_birth())
+            if(!is_dead)
             {
+                
+                age++;
+                
                 days_after_parturition++;
-                days_after_pregnant++;
+                if(is_pregnant())
+                    days_after_pregnant++;
+                get_pregnant();
+                give_birth(population);
             }
-            get_pregnant();
-            give_birth(population);
             return die();
             
         }
         void print() 
         {
-            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\tMature age: "<<mature_age<<", days after parturition:"<<days_after_parturition<<",\tdays after pregnant:"<<days_after_pregnant<<",\t"<<(is_pregnant()?"Pregnant":"Not Pregnant")<<",\t"<<(can_give_birth()?"Can give birth":"Cannot give birth")<<endl;
+            cout<<"Age: "<<age<<",\tID: "<<id<<",\t"<<(is_female?"Female":"Male")<<",\t"<<(is_dead?"Dead":"Alive")<<",\tMature age: "<<mature_age<<", days after parturition:"<<days_after_parturition<<",\tdays after pregnant:"<<days_after_pregnant<<",\t"<<(is_pregnant()?"Pregnant":"Not Pregnant")<<endl;
         }
     private:
-        int days_after_parturition=-1;
-        int days_after_pregnant=-1;
+        int days_after_parturition=0;
+        int days_after_pregnant=0;
         bool _is_pregnant=false;
         bool female_birth(double gender_ratio_female)
         {
@@ -130,44 +146,55 @@ class FemaleRabbit: public Rabbit
             // give birth to 1 to 6 baby rabbits
             return (int)(pow(genrand_real2(),2)/(1.0/6))+1;
         }
-        void get_pregnant()
-        {
-            if(can_give_birth() && days_after_parturition >= 3)
-            {
-                days_after_pregnant=0;
-                _is_pregnant = true;
-            }
-        }
+        
         bool is_pregnant()
         {
             return _is_pregnant; //Amenorrhea
         }
         bool can_give_birth()
         {
-            //Lactational Amenorrhea, Immature
-            if((!is_pregnant()) && is_mature())
+            //not in Lactational Amenorrhea, not Immature, fertile
+            if((is_pregnant()) && is_mature() && days_after_pregnant >= 27)
                 return true; 
             else
                 return false;
         }
-        void give_birth(list<Rabbit> population)
+        bool can_get_pregnant()
         {
-            if(can_give_birth() && days_after_pregnant >= 27)
+            //not in Lactational Amenorrhea, not Immature, fertile
+            if((!is_pregnant()) && is_mature() && days_after_parturition >= 3)
+                return true; 
+            else
+                return false;
+        }
+        void get_pregnant()
+        {
+            if(can_get_pregnant())
             {
+                days_after_pregnant=0;
+                _is_pregnant = true;
+            }
+        }
+        void give_birth(list<Rabbit*> &population)
+        {
+            if(can_give_birth())
+            {
+                cout<<"giving birth"<<endl;
                 //can give birth if not in amenorrhea
                 int number_of_birth = fertility();
                 for(int i=0; i<number_of_birth; i++)
                 {
-                    Rabbit baby;
+                    Rabbit *baby;
                     if(female_birth(0.5))
-                        baby = FemaleRabbit(population.size());
+                        baby = new FemaleRabbit();
                     else
-                        baby = MaleRabbit(population.size());
+                        baby = new MaleRabbit();
                     population.push_front(baby);
                 }
+                days_after_parturition=0;
+                _is_pregnant=false;
             }
-            days_after_parturition=0;
-            _is_pregnant=false;
+            
             return;
         }
         
