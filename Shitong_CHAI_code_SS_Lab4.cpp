@@ -10,33 +10,35 @@
 int main()
 {
     list<Rabbit*> pop;
-    for(int i=0;i<50;i++)
+    for(int i=0;i<5;i++)
     {
         Rabbit *r = new FemaleRabbit();
         pop.push_back(r);
     }
-    for(int i=50;i<90;i++)
+    for(int i=5;i<9;i++)
     {
         Rabbit *r = new MaleRabbit();
         pop.push_back(r);
     }
-    for(list<Rabbit*>::iterator i=pop.begin(); i!=pop.end();++i)
-    {
-        (*i)->print();
-    }
-    cout<<endl;
-    //list<Rabbit*>::iterator old_i;
+    // for(list<Rabbit*>::iterator i=pop.begin(); i!=pop.end();++i)
+    // {
+        // (*i)->print();
+    // }
+    // cout<<endl;
     
-    for(int j=0;j<400;j++)
+    
+    for(int j=0;j<2000;j++)
     {
         list<Rabbit*>::iterator i=pop.begin();
         list<Rabbit*>::iterator end=pop.end();
+        // cout<<"Years: "<<j/YEAR<<"\tMonths: "<<(j%YEAR)/MONTH<<"\tDays: "<<j%MONTH<<"\tPopulation: "<<pop.size()<<endl;
+        cout<<pop.size()<<","<<endl;
         while(i != end)
         {
             
             bool is_dead = (*i)->one_day_life(pop);
-            (*i)->print();
-            // cout<<(is_dead?"is dead":"is alive")<<endl;
+            //(*i)->print();
+            
             if(is_dead)
                 pop.erase(i++);
             else
@@ -44,10 +46,6 @@ int main()
         }
     }
     
-    // cout<<pop.size()<<endl;
-    // for(list<Rabbit*>::iterator i=pop.begin(); i!=pop.end();++i)
-    // {
-        // (*i)->print();
-    // }
+
 
 }
