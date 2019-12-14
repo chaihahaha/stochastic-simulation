@@ -9,6 +9,10 @@
 #include "Rabbit.h"
 int main()
 {
+    unsigned long     init[4] = {0x123, 0x234, 0x345, 0x456};
+    unsigned long     length  = 4;
+    init_by_array(init, length);
+    
     list<Rabbit*> pop;
     for(int i=0;i<5;i++)
     {
@@ -27,7 +31,7 @@ int main()
     // cout<<endl;
     
     
-    for(int j=0;j<2000;j++)
+    for(int j=0;j<200;j++)
     {
         list<Rabbit*>::iterator i=pop.begin();
         list<Rabbit*>::iterator end=pop.end();
@@ -36,7 +40,7 @@ int main()
         while(i != end)
         {
             
-            bool is_dead = (*i)->one_day_life(pop);
+            bool is_dead = (*i)->n_days_life(pop, MONTH);
             //(*i)->print();
             
             if(is_dead)
