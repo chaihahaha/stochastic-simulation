@@ -1,0 +1,205 @@
+\documentclass{article}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+
+\graphicspath{{img/}}
+
+\lstset{
+  breaklines=true
+}
+
+\newtcblisting{messageshell}{colback=black,colupper=white,colframe=yellow!75!black,
+listing only,listing options={language={}, basicstyle=\small\ttfamily, breaklines=true,aboveskip=0pt, belowskip=0pt},
+every listing line={}}
+
+\title{Stochastic Simulation Lab \#4 report}
+\author{Shitong CHAI}
+\date{}
+
+\begin{document}
+\maketitle 
+
+    \section{Fast simulation of a rabbit population growth.}
+    
+    The simple population growth can be simulated using the following formula:
+    $$ a_n = a_{n-1} + a_{n-2} $$
+    Assume there are only 2 rabbits in the beginning, so $a_0 = 2$ and $ a_1 = 2$, their children were born in the second month, so $a_2=a_0+a_1$. By induction, we can compute the population of $n^{th}$ month with the following function:
+    \begin{lstlisting}[language=C]
+long long unsigned fibonacci(long long unsigned n)
+{
+long long unsigned an_2 = 0;
+long long unsigned an_1 = 1;
+long long unsigned an   = 1;
+if( n == 0 )
+    return 0;
+if( n == 1 )
+    return 1;
+for(long long unsigned i=2; i < n; i++)
+{
+    an_2 = an_1;
+    an_1 = an;
+    an   = an_2 + an_1;
+}
+return an;
+}
+    \end{lstlisting}
+    The experiment result is as follows(time is counted by month, population is the number of rabbits):
+    \begin{messageshell}
+Time: 0, Population: 2
+Time: 1, Population: 2
+Time: 2, Population: 4
+Time: 3, Population: 6
+Time: 4, Population: 10
+Time: 5, Population: 16
+Time: 6, Population: 26
+Time: 7, Population: 42
+Time: 8, Population: 68
+Time: 9, Population: 110
+Time: 10, Population: 178
+Time: 11, Population: 288
+Time: 12, Population: 466
+Time: 13, Population: 754
+Time: 14, Population: 1220
+Time: 15, Population: 1974
+Time: 16, Population: 3194
+Time: 17, Population: 5168
+Time: 18, Population: 8362
+Time: 19, Population: 13530
+Time: 20, Population: 21892
+Time: 21, Population: 35422
+Time: 22, Population: 57314
+Time: 23, Population: 92736
+Time: 24, Population: 150050
+Time: 25, Population: 242786
+Time: 26, Population: 392836
+Time: 27, Population: 635622
+Time: 28, Population: 1028458
+Time: 29, Population: 1664080
+Time: 30, Population: 2692538
+Time: 31, Population: 4356618
+Time: 32, Population: 7049156
+Time: 33, Population: 11405774
+Time: 34, Population: 18454930
+Time: 35, Population: 29860704
+Time: 36, Population: 48315634
+Time: 37, Population: 78176338
+Time: 38, Population: 126491972
+Time: 39, Population: 204668310
+Time: 40, Population: 331160282
+Time: 41, Population: 535828592
+Time: 42, Population: 866988874
+Time: 43, Population: 1402817466
+Time: 44, Population: 2269806340
+Time: 45, Population: 3672623806
+Time: 46, Population: 5942430146
+Time: 47, Population: 9615053952
+Time: 48, Population: 15557484098
+Time: 49, Population: 25172538050
+Time: 50, Population: 40730022148
+    \end{messageshell}
+    The population overflows in the $92^{th}$ month because the maximum value of "long long unsigned" in C is $2^{64}-1$.
+    The time complexity of this algorithm is $O(n)$ where $n$ is the number of months, so it is fast enough.
+    
+    \section{More realistic population growth.}
+    
+    I designed three classes to model different characteristics and behaviors of male and female rabbits. The class diagram is shown in Figure 1.
+    
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\textwidth]{class_diagram}
+        \caption{Class Diagram}
+    \end{figure}
+    
+    I used the following distribution to generate the number of baby rabbits born by a female rabbit during one parturition:
+    
+    $$P(n)= \frac{n}{28}, n=\{1,2,\cdots,7\} $$
+    
+    The probability of giving birth to 7 baby rabbits is higher than giving birth to just 1 baby rabbits.
+    
+    I used the ratio 50\% as the probability of giving birth to female. I assume there is no infanticide if not stated in ahead in the following experiment results.
+    
+    When a new baby rabbit is born, I generate the mature age, pregnant cycle duration, and parturition recovery duration by days for it and fix it for its whole life. The mature age ranges from 5 to 7 months. The pregnant cycle duration ranges from 27 to 36 days. The parturition recovery duration ranges from 0 to 2 days. All of them can only take integer values and are uniformly distributed. 
+    
+    Due to the limited size of RAM, I can only simulate the first 91 months' population. The experiment result is shown in Figure 2 to Figure 4.
+    
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\textwidth]{r1_30}
+        \caption{Population of the first 30 months}
+    \end{figure}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\textwidth]{r1_50}
+        \caption{Population of the first 50 months}
+    \end{figure}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\textwidth]{r1_91}
+        \caption{Population of the first 91 months}
+    \end{figure}
+    
+    In Figure 2, the population sometimes drop in the first 5 months, and the population growth curve has many fluctuations. 
+    
+    In Figure 3, the population growth curve is much more smooth and fluctuations cannot be observed anymore. 
+    
+    In Figure 4, the population is a perfect exponential function curve, and the population explodes.
+    
+    The age structure of the 91 month's population is shown in Figure 5. In this population, young rabbits are much more than old rabbits because of exponential growth. The age structure is also approximately a exponential function.
+    \begin{figure}
+        \centering
+        \includegraphics[width=1.0\textwidth]{age_structure}
+        \caption{Age structure after 91 months}
+    \end{figure}
+    
+    To do 10 independent experiments, I have to choose 10 different random seeds. I chose the following random seeds randomly:
+    
+    \begin{lstlisting}[language=C]
+unsigned long     init1[4] = {0x123, 0x234, 0x345, 0x456};
+unsigned long     init2[4] = {0x686, 0x5e6, 0x76a, 0xf5d};
+unsigned long     init3[4] = {0x1d, 0xab0, 0x802, 0xaa3};
+unsigned long     init4[4] = {0xec3, 0x111, 0x223, 0x314};
+unsigned long     init5[4] = {0x907, 0xd21, 0x9b7, 0xf72};
+unsigned long     init6[4] = {0xd4f, 0x9b9, 0x1c9, 0xa20};
+unsigned long     init7[4] = {0x91, 0xa53, 0x3f6, 0x71f};
+unsigned long     init8[4] = {0xe5e, 0x3d1, 0x660, 0xd3b};
+unsigned long     init9[4] = {0xe8c, 0x230, 0xd2b, 0x2cd};
+unsigned long     init10[4] = {0xa79, 0x714, 0xf31, 0xbae};
+unsigned long     length  = 4;
+    \end{lstlisting}
+    
+    After repeating the experiment with these 10 different random seeds, I got the population growth curves with confidence intervals which are shown in Figure 6 to Figure 8. The time ranges from 0 to 80 months.
+    
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth]{err30}
+        \caption{Population growth curve in the first 30 months with confidence interval}
+    \end{figure}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth]{err50}
+        \caption{Population growth curve in the first 50 months with confidence interval}
+    \end{figure}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth]{err80}
+        \caption{Population growth curve in the first 80 months with confidence interval}
+    \end{figure}
+    
+    To simulation the effect of infanticide, I set the birth ratio of female rabbits to 0.2. The population growth curve is shown in Figure 9.
+    
+    \begin{figure}
+        \centering
+        \includegraphics[width=1.0\textwidth]{female_ratio}
+        \caption{Population growth curve in the first 80 months with confidence interval}
+    \end{figure}
+    
+    By comparison to Figure 8, we can clearly see that the population growth speed is much slower. This is easy to explain, with fewer female baby rabbits, there will be fewer mature female rabbits and less rabbits will be born.
+    
+    In the 80th month, the number of female rabbits  is 3196, and the number of male rabbits is 12690 which is approximately the ratio of birth ratio(3.97:1 and 4:1). We can draw the hypothesis that infanticide will drastically influence the growth speed and sex ratio of a population.
+
+    
+\end{document}
